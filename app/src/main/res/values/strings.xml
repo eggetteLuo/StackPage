@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">StackPage</string>
+    <string name="no_books_hint">not have book</string>
+</resources>
