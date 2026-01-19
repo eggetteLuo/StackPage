@@ -1,6 +1,7 @@
 package com.eggetteluo.stackpage.ui.reader
 
 import android.app.Activity
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -55,7 +56,11 @@ import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.eggetteluo.stackpage.ui.reader.compose.BottomMenu
+import kotlinx.coroutines.yield
 import org.koin.androidx.compose.koinViewModel
 import org.koin.core.parameter.parametersOf
 
@@ -78,7 +83,17 @@ fun ReaderScreen(
     val context = LocalContext.current
     val window = (context as? Activity)?.window
     val view = LocalView.current
+    val lifecycleOwner = LocalLifecycleOwner.current
 
+    // 滚动状态
+    val scrollState = rememberScrollState()
+
+    // 标记位，确保每章只在刚加载时恢复一次位置，防止翻页后又跳回老位置
+    var hasRestoredPosition by remember(bookId) { mutableStateOf(false) }
+
+    var triggerScroll by remember { mutableStateOf(false) }
+
+    // 进入阅读页面隐藏状态栏
     DisposableEffect(Unit) {
         window?.let {
             val controller = WindowCompat.getInsetsController(it, view)
@@ -94,6 +109,9 @@ fun ReaderScreen(
                 // 退出阅读页时务必恢复状态栏显示
                 controller.show(WindowInsetsCompat.Type.statusBars())
             }
+
+            // 退出时保存当前滚动位置
+            viewModel.saveReadingProgress(scrollState.value)
         }
     }
 
@@ -112,6 +130,45 @@ fun ReaderScreen(
     // 物理返回键处理：如果菜单开着，先关菜单
     BackHandler(showMenu) {
         showMenu = false
+    }
+
+    LaunchedEffect(uiState) {
+        if (uiState is ReaderUiState.Success) {
+            // 每当 uiState 变成 Success，标记需要触发滚动
+            triggerScroll = true
+        }
+    }
+
+    // 处理滚动逻辑
+    if (triggerScroll && uiState is ReaderUiState.Success) {
+        val state = uiState as ReaderUiState.Success
+        LaunchedEffect(state.initialScrollPos, scrollState.maxValue) {
+            // 如果是恢复进度
+            if (!hasRestoredPosition) {
+                if (scrollState.maxValue >= state.initialScrollPos && scrollState.maxValue > 0) {
+                    scrollState.scrollTo(state.initialScrollPos)
+                    hasRestoredPosition = true
+                    triggerScroll = false // 滚动完成，关闭触发器
+                }
+            } else {
+                // 如果是手动切换章节
+                scrollState.scrollTo(0)
+                triggerScroll = false
+            }
+        }
+    }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_PAUSE) {
+                // 手机切到后台、锁屏、或者弹出多任务时自动保存
+                viewModel.saveReadingProgress(scrollState.value)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
 
     Box(
@@ -140,7 +197,7 @@ fun ReaderScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .verticalScroll(rememberScrollState())
+                            .verticalScroll(scrollState)
                             .padding(horizontal = 20.dp, vertical = 16.dp)
                     ) {
                         Text(

@@ -46,16 +46,20 @@ class ReaderViewModel(
                 return@launch
             }
 
-            // 开始加载章节: 优先使用保存的进度，否则从第 0 章开始
+            // 获取进度中的 章节索引 和 滚动像素位置
             val startChapterIndex = bookWithProgress.progress?.lastChapterIndex ?: 0
-            loadChapter(startChapterIndex)
+            val startPosition = bookWithProgress.progress?.lastPosition?.toInt() ?: 0
+
+            // 第一次加载时，传入保存的像素位置
+            loadChapter(startChapterIndex, startPosition)
         }
     }
 
     /**
      * 加载指定索引的章节内容
+     * @param scrollPos 初始滚动到的像素位置，默认为 0（切换章节时使用）
      */
-    fun loadChapter(index: Int) {
+    fun loadChapter(index: Int, scrollPos: Int = 0) {
         if (index !in allChapters.indices) return
 
         viewModelScope.launch(Dispatchers.IO) {
@@ -68,12 +72,12 @@ class ReaderViewModel(
                     title = chapter.title,
                     content = content,
                     chapterIndex = index,
-                    totalChapters = allChapters.size
+                    totalChapters = allChapters.size,
+                    initialScrollPos = scrollPos
                 )
 
-                // 每次成功加载新章节时，顺便更新一下数据库里的进度
-                saveProgress(index)
-
+                // 更新数据库进度
+                saveProgress(index, scrollPos.toLong())
             } catch (e: Exception) {
                 _uiState.value = ReaderUiState.Error("读取失败: ${e.message}")
             }
@@ -92,15 +96,28 @@ class ReaderViewModel(
         return String(bytes, Charset.forName(book.encoding)).trimStart()
     }
 
-    private suspend fun saveProgress(chapterIndex: Int) {
+    private suspend fun saveProgress(chapterIndex: Int, position: Long) {
         dao.saveProgress(
             ProgressEntity(
                 bookId = bookId,
                 lastChapterIndex = chapterIndex,
-                lastPosition = 0, // 暂时存章节首
+                lastPosition = position,
                 updateTime = System.currentTimeMillis()
             )
         )
+    }
+
+    /**
+     * 保存当前阅读位置
+     * @param position 当前滚动的像素值
+     */
+    fun saveReadingProgress(position: Int) {
+        val state = _uiState.value
+        if (state is ReaderUiState.Success) {
+            viewModelScope.launch(Dispatchers.IO) {
+                saveProgress(state.chapterIndex, position.toLong())
+            }
+        }
     }
 
 }
@@ -111,7 +128,8 @@ sealed class ReaderUiState {
         val title: String,
         val content: String,
         val chapterIndex: Int,
-        val totalChapters: Int
+        val totalChapters: Int,
+        val initialScrollPos: Int
     ) : ReaderUiState()
 
     data class Error(val message: String) : ReaderUiState()
