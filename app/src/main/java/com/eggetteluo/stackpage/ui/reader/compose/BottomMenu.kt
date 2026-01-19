@@ -14,42 +14,74 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.eggetteluo.stackpage.ui.reader.ReaderUiState
-import com.eggetteluo.stackpage.ui.reader.ReaderViewModel
 
 @Composable
-fun BottomMenu(uiState: ReaderUiState, viewModel: ReaderViewModel) {
+fun BottomMenu(
+    uiState: ReaderUiState,
+    onToggleChapter: (Int) -> Unit
+) {
     Surface(
         tonalElevation = 8.dp,
-        color = Color(0xFFF4ECD8).copy(alpha = 0.9f)
+        color = Color(0xFFF4ECD8).copy(alpha = 0.98f)
     ) {
-        Column(modifier = Modifier
-            .padding(16.dp)
-            .navigationBarsPadding()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .navigationBarsPadding()
+        ) {
             if (uiState is ReaderUiState.Success) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "本章：${uiState.currentTitle}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.Gray,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                // 交互控制行
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
+                    // 上一章按钮
                     TextButton(
-                        onClick = { viewModel.loadChapter(uiState.chapterIndex - 1) },
-                        enabled = uiState.chapterIndex > 0
+                        onClick = { onToggleChapter(uiState.currentChapterIndex - 1) },
+                        enabled = uiState.currentChapterIndex > 0
                     ) {
-                        Text("上一章")
+                        Text("上一章", color = MaterialTheme.colorScheme.primary)
                     }
 
-                    Text(
-                        "第 ${uiState.chapterIndex + 1} / ${uiState.totalChapters} 章",
-                        style = MaterialTheme.typography.labelMedium
-                    )
+                    // 进度文字
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            "第 ${uiState.currentChapterIndex + 1} 章",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Text(
+                            "共 ${uiState.totalChapters} 章",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.Gray
+                        )
+                    }
 
+                    // 下一章按钮
                     TextButton(
-                        onClick = { viewModel.loadChapter(uiState.chapterIndex + 1) },
-                        enabled = uiState.chapterIndex < uiState.totalChapters - 1
+                        onClick = { onToggleChapter(uiState.currentChapterIndex + 1) },
+                        enabled = uiState.currentChapterIndex < uiState.totalChapters - 1
                     ) {
-                        Text("下一章")
+                        Text("下一章", color = MaterialTheme.colorScheme.primary)
                     }
                 }
             }
