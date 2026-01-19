@@ -1,5 +1,10 @@
 package com.eggetteluo.stackpage.ui
 
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -19,7 +24,10 @@ fun StackPageApp() {
         startDestination = Library
     ) {
         // 书架页
-        composable<Library> {
+        composable<Library>(
+            exitTransition = { fadeOut(animationSpec = tween(300)) },
+            popEnterTransition = { fadeIn(animationSpec = tween(300)) }
+        ) {
             LibraryScreen(
                 onNavigateToReader = { id ->
                     navController.navigate(Reader(bookId = id))
@@ -28,14 +36,24 @@ fun StackPageApp() {
         }
 
         // 阅读页
-        composable<Reader> { backStackEntry ->
+        composable<Reader>(
+            enterTransition = {
+                slideInHorizontally(
+                    initialOffsetX = { it },
+                    animationSpec = tween(800)
+                ) + fadeIn()
+            },
+            popExitTransition = {
+                slideOutHorizontally(
+                    targetOffsetX = { it },
+                    animationSpec = tween(800)
+                ) + fadeOut()
+            }
+        ) { backStackEntry ->
             val readerRoute = backStackEntry.toRoute<Reader>()
-
             ReaderScreen(
                 bookId = readerRoute.bookId,
-                onBack = {
-                    navController.popBackStack()
-                }
+                onBack = { navController.popBackStack() }
             )
         }
     }

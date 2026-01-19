@@ -80,4 +80,7 @@ dependencies {
 
     // 编码解析工具
     implementation(libs.jchardet)
+
+    // coil
+    implementation(libs.coil.compose)
 }
