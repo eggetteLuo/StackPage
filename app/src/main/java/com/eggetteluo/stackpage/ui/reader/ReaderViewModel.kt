@@ -75,8 +75,10 @@ class ReaderViewModel(
             val chapterMetadata = allChapters[index]
 
             try {
-                val text = readTextFromFile(book, chapterMetadata)
-                val newChapter = ChapterContent(index, chapterMetadata.title, text)
+                val rawText = readTextFromFile(book, chapterMetadata)
+                // 清洗文本
+                val cleanedText = cleanChapterContent(rawText, chapterMetadata.title)
+                val newChapter = ChapterContent(index, chapterMetadata.title, cleanedText)
 
                 if (isAppend) {
                     loadedChapters.add(newChapter)
@@ -130,6 +132,25 @@ class ReaderViewModel(
 
             // 更新书籍阅读时间
             dao.updateLastReadTime(bookId, currentTime)
+        }
+    }
+
+    private fun cleanChapterContent(rawText: String, title: String): String {
+        // 将文本按行拆分，并去掉每行末尾的空白字符
+        val lines = rawText.lines().map { it.trimEnd() }.filter { it.isNotBlank() }.toMutableList()
+
+        if (lines.isNotEmpty()) {
+            val firstLine = lines[0].trim()
+
+            // 检查第一行是否包含标题
+            if (firstLine.contains(title) || title.contains(firstLine)) {
+                lines.removeAt(0)
+            }
+        }
+
+        // 重新合并，并在段落之间加上缩进
+        return lines.joinToString("\n\n") { line ->
+            "　　${line.trim()}"
         }
     }
 
