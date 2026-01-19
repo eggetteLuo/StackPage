@@ -15,5 +15,6 @@ data class BookEntity(
     val coverPath: String? = null,   // 封面图片路径
     val format: String,              // "txt", "epub"
     val encoding: String = "UTF-8",  // 编码格式
+    val size: Long = 0L,             // 文件大小
     val addTime: Long = System.currentTimeMillis()
 )

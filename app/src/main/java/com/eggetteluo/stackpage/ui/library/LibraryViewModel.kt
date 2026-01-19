@@ -11,8 +11,11 @@ import com.eggetteluo.stackpage.data.entity.BookWithProgress
 import com.eggetteluo.stackpage.data.entity.ChapterEntity
 import com.eggetteluo.stackpage.data.entity.ProgressEntity
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -24,6 +27,9 @@ import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
 
 class LibraryViewModel(private val dao: ReadingDao) : ViewModel() {
+
+    private val _importState = MutableSharedFlow<ImportUiState>()
+    val importState: SharedFlow<ImportUiState> = _importState.asSharedFlow()
 
     val booksState: StateFlow<List<BookWithProgress>> = dao.getAllBooksWithProgress()
         .stateIn(
@@ -53,43 +59,54 @@ class LibraryViewModel(private val dao: ReadingDao) : ViewModel() {
     fun importBook(context: Context, uri: Uri) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                // 获取文件名并构建内部私有路径
-                val fileName = getFileName(context, uri)
-                    ?: "Unknown_${System.currentTimeMillis()}.txt"
+                _importState.emit(ImportUiState.Loading)
+
+                // 获取基础信息
+                val fileName =
+                    getFileName(context, uri) ?: "Unknown_${System.currentTimeMillis()}.txt"
+                val fileSize = getFileSize(context, uri)
+                val title = fileName.substringBeforeLast(".")
+
+                // 精准查重逻辑
+                val existingBook = dao.findBookByNameAndSize(title, fileSize)
+                if (existingBook != null) {
+                    _importState.emit(ImportUiState.Error("书籍已存在"))
+                    return@launch
+                }
+
+                // 物理拷贝
                 val internalFile = File(context.filesDir, "imported_books/$fileName")
-
-                // 确保父目录存在
-                internalFile.parentFile?.mkdirs()
-
-                // 将文件流拷贝至 App 私有目录
+                if (!internalFile.parentFile!!.exists()) internalFile.parentFile?.mkdirs()
                 copyFileToInternal(context, uri, internalFile)
 
-                // 自动探测文件编码
+                // 编码探测与元数据准备
                 val detectedCharset = detectCharset(internalFile)
-                val encodingName = detectedCharset.name()
-
-                // 提取元数据
-                val title = fileName.substringBeforeLast(".")
                 val extension = fileName.substringAfterLast(".", "txt").lowercase()
 
-                // 将书籍基本信息存入数据库
+                // 存入数据库
                 val book = BookEntity(
                     title = title,
-                    filePath = internalFile.absolutePath,  // // 记录内部绝对路径
+                    filePath = internalFile.absolutePath,
                     format = extension,
-                    encoding = encodingName,
+                    encoding = detectedCharset.name(),
+                    size = fileSize
                 )
                 val bookId = dao.insertBook(book)
 
-                // 如果是文本文件，启动异步章节解析任务
+                // 章节解析 (如果是 TXT)
                 if (extension == "txt") {
                     parseTxtChapters(bookId, internalFile, detectedCharset)
                 }
 
-                // 初始化该书的阅读进度记录
+                // 初始化进度
                 dao.saveProgress(ProgressEntity(bookId = bookId))
+
+                // 发送成功信号
+                _importState.emit(ImportUiState.Success(title))
+
             } catch (e: Exception) {
                 e.printStackTrace()
+                _importState.emit(ImportUiState.Error("导入失败: ${e.message}"))
             }
         }
     }
@@ -106,6 +123,16 @@ class LibraryViewModel(private val dao: ReadingDao) : ViewModel() {
             }
         }
         return name
+    }
+
+    /**
+     * 获取文件大小
+     */
+    private fun getFileSize(context: Context, uri: Uri): Long {
+        return context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+            val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
+            if (cursor.moveToFirst()) cursor.getLong(sizeIndex) else 0L
+        } ?: 0L
     }
 
     /**
@@ -138,7 +165,8 @@ class LibraryViewModel(private val dao: ReadingDao) : ViewModel() {
                     var chapterIndex = 0
 
                     reader.lineSequence().forEach { line ->
-                        val lineByteLength = line.toByteArray(charset).size.toLong() + lineSeparatorLength
+                        val lineByteLength =
+                            line.toByteArray(charset).size.toLong() + lineSeparatorLength
 
                         if (regex.containsMatchIn(line)) {
                             // 发现新章节：封闭上一个章节的坐标区间
@@ -223,9 +251,16 @@ class LibraryViewModel(private val dao: ReadingDao) : ViewModel() {
             FileInputStream(file).use { it.read(buffer) }
             val content = String(buffer, charset)
             if (content.contains("\r\n")) 2 else 1 // Windows 为 2 (\r\n), Unix 为 1 (\n)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             1 // 默认 1
         }
     }
 
+}
+
+sealed class ImportUiState {
+    object Idle : ImportUiState()
+    object Loading : ImportUiState()
+    data class Success(val title: String) : ImportUiState()
+    data class Error(val message: String) : ImportUiState()
 }

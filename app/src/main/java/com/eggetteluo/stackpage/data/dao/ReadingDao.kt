@@ -29,6 +29,9 @@ interface ReadingDao {
     @Query("SELECT * FROM books WHERE id = :bookId")
     suspend fun getBookById(bookId: Long): BookEntity?
 
+    @Query("SELECT * FROM books WHERE title = :title AND size = :size LIMIT 1")
+    suspend fun findBookByNameAndSize(title: String, size: Long): BookEntity?
+
     @Delete
     suspend fun deleteBook(book: BookEntity)
 
