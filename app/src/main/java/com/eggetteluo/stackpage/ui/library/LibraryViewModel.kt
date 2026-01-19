@@ -63,7 +63,8 @@ class LibraryViewModel(private val dao: ReadingDao) : ViewModel() {
                 _importState.emit(ImportUiState.Loading)
 
                 // 获取基础信息
-                val originalFileName = getFileName(context, uri) ?: "Unknown_${System.currentTimeMillis()}.txt"
+                val originalFileName =
+                    getFileName(context, uri) ?: "Unknown_${System.currentTimeMillis()}.txt"
                 val fileSize = getFileSize(context, uri)
                 val title = BookNameParser.parseTitle(originalFileName)
 

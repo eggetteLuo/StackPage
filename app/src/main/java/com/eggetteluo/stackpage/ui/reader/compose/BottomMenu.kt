@@ -60,7 +60,7 @@ fun BottomMenu(
                         onClick = { onToggleChapter(uiState.currentChapterIndex - 1) },
                         enabled = uiState.currentChapterIndex > 0
                     ) {
-                        Text("上一章", color = MaterialTheme.colorScheme.primary)
+                        Text("上一章")
                     }
 
                     // 进度文字
@@ -81,7 +81,7 @@ fun BottomMenu(
                         onClick = { onToggleChapter(uiState.currentChapterIndex + 1) },
                         enabled = uiState.currentChapterIndex < uiState.totalChapters - 1
                     ) {
-                        Text("下一章", color = MaterialTheme.colorScheme.primary)
+                        Text("下一章")
                     }
                 }
             }
