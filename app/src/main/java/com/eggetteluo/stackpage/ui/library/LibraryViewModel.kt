@@ -10,6 +10,7 @@ import com.eggetteluo.stackpage.data.entity.BookEntity
 import com.eggetteluo.stackpage.data.entity.BookWithProgress
 import com.eggetteluo.stackpage.data.entity.ChapterEntity
 import com.eggetteluo.stackpage.data.entity.ProgressEntity
+import com.eggetteluo.stackpage.util.BookNameParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -62,10 +63,9 @@ class LibraryViewModel(private val dao: ReadingDao) : ViewModel() {
                 _importState.emit(ImportUiState.Loading)
 
                 // 获取基础信息
-                val fileName =
-                    getFileName(context, uri) ?: "Unknown_${System.currentTimeMillis()}.txt"
+                val originalFileName = getFileName(context, uri) ?: "Unknown_${System.currentTimeMillis()}.txt"
                 val fileSize = getFileSize(context, uri)
-                val title = fileName.substringBeforeLast(".")
+                val title = BookNameParser.parseTitle(originalFileName)
 
                 // 精准查重逻辑
                 val existingBook = dao.findBookByNameAndSize(title, fileSize)
@@ -75,13 +75,13 @@ class LibraryViewModel(private val dao: ReadingDao) : ViewModel() {
                 }
 
                 // 物理拷贝
-                val internalFile = File(context.filesDir, "imported_books/$fileName")
+                val internalFile = File(context.filesDir, "imported_books/$originalFileName")
                 if (!internalFile.parentFile!!.exists()) internalFile.parentFile?.mkdirs()
                 copyFileToInternal(context, uri, internalFile)
 
                 // 编码探测与元数据准备
                 val detectedCharset = detectCharset(internalFile)
-                val extension = fileName.substringAfterLast(".", "txt").lowercase()
+                val extension = originalFileName.substringAfterLast(".", "txt").lowercase()
 
                 // 存入数据库
                 val book = BookEntity(
