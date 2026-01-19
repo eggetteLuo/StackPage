@@ -6,6 +6,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
+import androidx.room.Update
 import com.eggetteluo.stackpage.data.entity.BookEntity
 import com.eggetteluo.stackpage.data.entity.BookWithProgress
 import com.eggetteluo.stackpage.data.entity.ChapterEntity
@@ -28,6 +29,12 @@ interface ReadingDao {
 
     @Query("SELECT * FROM books WHERE id = :bookId")
     suspend fun getBookById(bookId: Long): BookEntity?
+
+    /**
+     * 更新书籍信息（用于更新总章节数、最后阅读时间等）
+     */
+    @Update
+    suspend fun updateBook(book: BookEntity)
 
     @Query("SELECT * FROM books WHERE title = :title AND size = :size LIMIT 1")
     suspend fun findBookByNameAndSize(title: String, size: Long): BookEntity?

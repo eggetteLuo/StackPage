@@ -203,7 +203,14 @@ class LibraryViewModel(private val dao: ReadingDao) : ViewModel() {
 
                 // 批量入库，减少事务开销
                 if (chapters.isNotEmpty()) {
+                    // 批量插入章节
                     dao.insertChapters(chapters)
+
+                    // 更新书籍的总章节数
+                    val totalChaptersCount = chapters.size
+                    dao.getBookById(bookId)?.let { book ->
+                        dao.updateBook(book.copy(totalChapters = totalChaptersCount))
+                    }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()

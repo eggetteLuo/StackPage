@@ -128,7 +128,7 @@ fun LibraryScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 items(books, key = { it.book.id }) { item ->
-                    BookItem(item = item, onClick = { onNavigateToReader(item.book.id) })
+                    BookItem(item = item) { onNavigateToReader(item.book.id) }
                 }
             }
         }
