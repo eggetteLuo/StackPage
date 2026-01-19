@@ -21,6 +21,10 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    base {
+        archivesName.set("StackPage-${defaultConfig.versionName}-${defaultConfig.versionCode}")
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false

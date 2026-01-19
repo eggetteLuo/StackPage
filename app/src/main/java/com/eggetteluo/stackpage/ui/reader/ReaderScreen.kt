@@ -143,6 +143,13 @@ fun ReaderScreen(
         }
     }
 
+    // --- 监听滚动即隐藏菜单 ---
+    LaunchedEffect(listState.isScrollInProgress) {
+        if (listState.isScrollInProgress && showMenu) {
+            showMenu = false
+        }
+    }
+
     // --- 界面布局 ---
     Box(
         modifier = Modifier

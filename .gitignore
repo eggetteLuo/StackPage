@@ -1,15 +1,35 @@
-*.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
+# Created by .ignore support plugin (hsz.mobi)
+### Android ###
+# Built application files
+*.apk
+*.aab
+*.ap_
+
+# Files for the ART/Dalvik VM
+*.dex
+
+# Java class files
+*.class
+
+# Generated files
+bin/
+gen/
+out/
+
+# Gradle files
+.gradle/
+build/
+
+# Local configuration file (sdk path, etc)
 .externalNativeBuild
 .cxx
 local.properties
+/app/schemas/com.eggetteluo.stackpage.data.entity.AppDatabase/2.json
+/app/schemas/com.eggetteluo.stackpage.data.entity.AppDatabase/3.json
+/app/release/output-metadata.json
+/app/release/StackPage-1.0-1-release.apk
+/app/release/baselineProfiles/0/StackPage-1.0-1-release.dm
+/app/release/baselineProfiles/1/StackPage-1.0-1-release.dm
+
+# Keystore files
+*.jks
