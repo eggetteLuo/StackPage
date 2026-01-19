@@ -116,14 +116,20 @@ class ReaderViewModel(
      */
     fun saveReadingProgress(chapterIndex: Int, position: Int) {
         viewModelScope.launch(Dispatchers.IO) {
+            val currentTime = System.currentTimeMillis()
+
+            // 保存阅读进度
             dao.saveProgress(
                 ProgressEntity(
                     bookId = bookId,
                     lastChapterIndex = chapterIndex,
                     lastPosition = position.toLong(),
-                    updateTime = System.currentTimeMillis()
+                    updateTime = currentTime
                 )
             )
+
+            // 更新书籍阅读时间
+            dao.updateLastReadTime(bookId, currentTime)
         }
     }
 

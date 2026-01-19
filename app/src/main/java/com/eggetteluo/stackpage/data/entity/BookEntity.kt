@@ -16,5 +16,6 @@ data class BookEntity(
     val format: String,              // "txt", "epub"
     val encoding: String = "UTF-8",  // 编码格式
     val size: Long = 0L,             // 文件大小
-    val addTime: Long = System.currentTimeMillis()
+    val addTime: Long = System.currentTimeMillis(),   // 添加时间
+    val lastReadTime: Long = 0L     // 最后阅读时间
 )

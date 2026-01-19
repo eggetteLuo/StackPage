@@ -23,7 +23,7 @@ interface ReadingDao {
     fun getAllBooks(): Flow<List<BookEntity>>
 
     @Transaction
-    @Query("SELECT * FROM books")
+    @Query("SELECT * FROM books ORDER BY lastReadTime DESC, addTime DESC")
     fun getAllBooksWithProgress(): Flow<List<BookWithProgress>>
 
     @Query("SELECT * FROM books WHERE id = :bookId")
@@ -52,5 +52,9 @@ interface ReadingDao {
     @Transaction
     @Query("SELECT * FROM books WHERE id = :bookId")
     suspend fun getBookWithProgressById(bookId: Long): BookWithProgress?
+
+    // 更新书籍的最后阅读时间
+    @Query("UPDATE books SET lastReadTime = :timestamp WHERE id = :bookId")
+    suspend fun updateLastReadTime(bookId: Long, timestamp: Long)
 
 }
