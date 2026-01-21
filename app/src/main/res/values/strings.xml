@@ -1,4 +1,6 @@
 <resources>
     <string name="app_name">StackPage</string>
-    <string name="no_books_hint">not have book</string>
+    <string name="no_books_hint">There are no books yet</string>
+    <string name="library_empty_hint">In this quiet corner, a first journey of words awaits your initiation</string>
+    <string name="delete_book">Delete book</string>
 </resources>

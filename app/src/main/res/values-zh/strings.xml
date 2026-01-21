@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">叠页</string>
-    <string name="no_books_hint">not have book</string>
+    <string name="no_books_hint">还没有书籍呢</string>
+    <string name="library_empty_hint">在这个安静的角落里，正等待着你开启第一段文字旅程</string>
+    <string name="delete_book">删除书籍</string>
 </resources>
